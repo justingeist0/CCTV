@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Swapper</title>
+</head>
+<body>
+    <img id="image" src="" alt="Image" style="width: 1920px; height: 1080px">
+
+    <script>
+
+        const baseURL = "http://localhost:3000/"
+        let imageUrls = [];
+        let imageCache = [];
+        let imgIdx = 0
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const deviceId = urlParams.get('deviceId');
+
+        function updateImageUrls(newUrls) {
+            if (newUrls.length == imageUrls.length) {
+                let allEqual = true
+                for (var i = 0; i < newUrls.length; i++) 
+                    if (newUrls[i] != imageUrls[i]) {
+                        allEqual = false
+                    }
+                if (allEqual) return 
+            }
+            imageUrls = newUrls
+            imageUrls.forEach(url => {
+                const image = new Image();
+                image.src = url;
+                imageCache.push(image);
+            });
+            changeImage(0)
+        }
+
+        function changeImage(index) {
+            if (index >= 0 && index < imageCache.length) {
+                const imageElement = document.getElementById('image');
+                imageElement.src = imageCache[index].src;
+            }
+        }
+
+        function fetchLatestImages() {
+            console.log("fetching images")
+            fetch(baseURL + 'device/' + deviceId)
+                .then(response => response.json())
+                .then(data => {
+                    clients = data
+                    const images = data[0].images
+                    updateImageUrls(images)
+                })
+                .catch(error => {
+                    console.error("Error fetching data: ", error);
+                });
+        }
+
+        //Check for updates every 60 minutes
+        setInterval(() => {
+            fetchLatestImages()
+        }, 3600000)
+
+        //Change image every 60 seconds
+        setInterval(() => {
+            if (imgIdx >= imageCache.length)
+                imgIdx = 0
+            changeImage(imgIdx)
+            imgIdx += 1
+        }, 60000)
+
+        fetchLatestImages() 
+
+    </script>
+</body>
+</html>

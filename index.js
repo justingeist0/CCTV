@@ -1,4 +1,4 @@
-const { run, getClients, storeClient } = require('./db')
+const { run, getClients, storeClient, getDevices, storeDevice, setDeviceImages, getDevice } = require('./db')
 // var admin = require("firebase-admin");
 // var serviceAccount = require("./firebase-admin.json");
 // admin.initializeApp({
@@ -19,6 +19,20 @@ const port = 3000;
 app.get('/', (req, res) => {
   // Read the content of a file (e.g., "index.html")
   fs.readFile('index.html', 'utf8', (err, data) => {
+    if (err) {
+      // Handle any errors
+      console.error(err);
+      res.status(500).send('Error reading the file.');
+    } else {
+      // Send the file content as the response
+      res.send(data);
+    }
+  });
+});
+
+app.get('/obs', (req, res) => {
+  // Read the content of a file (e.g., "index.html")
+  fs.readFile('obs.html', 'utf8', (err, data) => {
     if (err) {
       // Handle any errors
       console.error(err);
@@ -52,45 +66,37 @@ app.post('/add-client', async (req, res) => {
   res.json(store);
 });
 
+app.get('/add-device', (req, res) => {
+  // Read the content of a file (e.g., "index.html")
+  fs.readFile('add-device.html', 'utf8', (err, data) => {
+    if (err) {
+      // Handle any errors
+      console.error(err);
+      res.status(500).send('Error reading the file.');
+    } else {
+      // Send the file content as the response
+      res.send(data);
+    }
+  });
+});
 
-// Sample data for demonstration
-const data = {
-    1: ["String 1", "String 2", "String 3"],
-    2: ["Apple", "Banana", "Cherry"],
-    3: ["One", "Two", "Three"],
-  };
-  
-app.get('/images/:id', (req, res) => {
+app.post('/add-device', async (req, res) => {
+  const clientData = req.body;
+  const store = await storeDevice(clientData)
+  clientData['_id'] = store.insertedId
+  res.json(clientData);
+});
+
+app.post('/device-images/:id', async (req, res) => {
     const id = req.params.id;
-    if (data[id]) {
-        res.json(data[id]);
+    const images = req.body;
+    console.log("id: ", id, "images: ", images)
+    const result = await setDeviceImages(id, images)
+    if (result) {
+        res.status(400)
     } else {
         res.status(404).json({ error: 'Data not found for the provided ID' });
     }
-});
-
-app.post('/images/:id', (req, res) => {
-    const id = req.params.id;
-    if (data[id]) {
-        res.json(data[id]);
-    } else {
-        res.status(404).json({ error: 'Data not found for the provided ID' });
-    }
-});
-
-app.delete('/images/:id', (req, res) => {
-    const id = req.params.id;
-    if (data[id]) {
-        res.json(data[id]);
-    } else {
-        res.status(404).json({ error: 'Data not found for the provided ID' });
-    }
-});
-
-app.get('/devices', (req, res) => {
-    res.json({"data": [
-        "Device 1", "device 2"
-    ]});
 });
 
 app.get('/clients', async (req, res) => {
@@ -98,13 +104,16 @@ app.get('/clients', async (req, res) => {
     res.json(clients);
 });
 
-app.post('/devices', (req, res) => {
-    const id = req.params.id;
-    if (data[id]) {
-        res.json(data[id]);
-    } else {
-        res.status(404).json({ error: 'Data not found for the provided ID' });
-    }
+app.get('/devices/:id', async (req, res) => {
+  const id = req.params.id;
+  const data = await getDevices(id)
+  res.json(data)
+});
+
+app.get('/device/:id', async (req, res) => {
+  const id = req.params.id;
+  const data = await getDevice(id)
+  res.json(data)
 });
 
 app.listen(port, () => {
