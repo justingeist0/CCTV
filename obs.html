@@ -2,75 +2,194 @@
 <html>
 <head>
     <title>Image Swapper</title>
+    <style>
+        .container {
+            position: relative;
+            width: 1920px;
+            height: 1080px;
+        }
+
+        img, video {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+      </style>
 </head>
 <body>
-    <img id="image" src="" alt="Image" style="width: 1920px; height: 1080px">
 
-    <script>
+    <div class="container">
+        <img id="nextImage" src="" alt="Image" style="width: 1920px; height: 1080px">
+        <img id="image" src="" alt="Image" style="width: 1920px; height: 1080px">
+    </div>
 
-        const baseURL = "https://cc-tv.onrender.com/"
-        let imageUrls = [];
-        let imageCache = [];
-        let imgIdx = 0
+    <!-- <div class="container">
+        <video id="nextVideo" autoplay muted loop controls width="1920" height="1080"></video>
+        <video id="video" autoplay muted loop controls width="1920" height="1080"></video>
+    </div> -->
 
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const deviceId = urlParams.get('deviceId');
+<script>
 
-        function updateImageUrls(newUrls) {
-            if (newUrls.length == imageUrls.length) {
-                let allEqual = true
-                for (var i = 0; i < newUrls.length; i++) 
-                    if (newUrls[i] != imageUrls[i]) {
-                        allEqual = false
-                    }
-                if (allEqual) return 
-            }
-            imageUrls = newUrls
-            imageUrls.forEach(url => {
+    // const baseURL = "https://cc-tv.onrender.com/"
+    const baseURL = "http://localhost:3000/"
+    let imageUrls = [];
+    let imageCache = [];
+    let imgIdx = 0
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const deviceId = urlParams.get('deviceId');
+
+    function updateImageUrls(newUrls) {
+        if (newUrls.length == imageUrls.length) {
+            let allEqual = true
+            for (var i = 0; i < newUrls.length; i++) 
+                if (newUrls[i] != imageUrls[i]) {
+                    allEqual = false
+                }
+            if (allEqual) return 
+        }
+        imageUrls = newUrls
+        imageUrls.forEach(url => {
+            if (url.includes('.mp4')) {
+                const preloadVideo = document.createElement("video");
+                preloadVideo.src = url;
+                imageCache.push(preloadVideo)
+            } else {
                 const image = new Image();
                 image.src = url;
                 imageCache.push(image);
-            });
-            changeImage(0)
-        }
-
-        function changeImage(index) {
-            if (index >= 0 && index < imageCache.length) {
-                const imageElement = document.getElementById('image');
-                imageElement.src = imageCache[index].src;
             }
+        });
+        changeImage(0)
+    }
+
+    function changeImage(index) {
+        if (index >= 0 && index < imageCache.length) {
+            const imageElement = document.getElementById('image');
+            const nextImage = document.getElementById('nextImage');
+            nextImage.src = imageCache[index].src;
+            let opacity = 1;
+            const animationDuration = 1000; // Animation duration in milliseconds
+            const frameRate = 60; // Frames per second
+
+            const startTime = performance.now();
+            function animate() {
+                const currentTime = performance.now();
+                const elapsedTime = currentTime - startTime;
+                const progress = Math.min(elapsedTime / animationDuration, 1);
+
+                imageElement.style.opacity = 1 - progress;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    imageElement.src = imageCache[index].src;
+                    imageElement.style.opacity = 1;
+                }
+            }
+
+            requestAnimationFrame(animate);
         }
+    }
 
-        function fetchLatestImages() {
-            console.log("fetching images")
-            fetch(baseURL + 'device/' + deviceId)
-                .then(response => response.json())
-                .then(data => {
-                    clients = data
-                    const images = data[0].images
-                    updateImageUrls(images)
-                })
-                .catch(error => {
-                    console.error("Error fetching data: ", error);
-                });
+    async function fetchLatestImages() {
+        fetch(baseURL + 'device/' + deviceId)
+            .then(response => response.json())
+            .then(data => {
+                clients = data
+                const images = data[0].images
+                updateImageUrls(images)
+            })
+            .catch(error => {
+                console.error("Error fetching data: ", error);
+            });
+    }
+
+    //Check for updates every 60 minutes
+    setInterval(async () => {
+        if (version != await getVersion()) {
+            location.reload()
         }
+        await fetchLatestImages()
+    }, 60000)
 
-        //Check for updates every 60 minutes
-        setInterval(() => {
-            fetchLatestImages()
-        }, 3600000)
+    //Change image every 60 seconds
+    setInterval(() => {
+        console.log(imgIdx)
+        if (imgIdx >= imageCache.length)
+            imgIdx = 0
+        changeImage(imgIdx)
+        imgIdx += 1
+    }, 12000)
 
-        //Change image every 60 seconds
-        setInterval(() => {
-            if (imgIdx >= imageCache.length)
-                imgIdx = 0
-            changeImage(imgIdx)
-            imgIdx += 1
-        }, 1000)
+    fetchLatestImages() 
 
-        fetchLatestImages() 
+    let version = 0
+    setTimeout(async () => {
+        version = await getVersion()
+    })
 
-    </script>
+    function getVersion() {
+        return fetch(baseURL + 'get-version')
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                return data.version;
+            })
+            .catch(error => {
+                console.error("Error fetching data: ", error);
+                throw error; // Optionally re-throw the error if needed.
+            });
+    }
+
+    const videoPlayer = document.getElementById('video')
+    const oneSecondThreshold = 1
+    // Function to preload and change the video source
+    function preloadAndChangeVideo(sourceURL) {
+        // Create a new video element for preloading
+        const preloadVideo = document.createElement("video");
+
+        // Set the source to the new URL
+        preloadVideo.src = sourceURL;
+
+        // Once metadata is loaded, switch the source and play
+        preloadVideo.onloadedmetadata = function() {
+            videoPlayer.src = sourceURL;
+            videoPlayer.load(); // Reload the video to apply the new source
+            videoPlayer.play(); // Start playing the new video
+
+            // Add an event listener to detect when the video has approximately one second left
+            videoPlayer.addEventListener("timeupdate", function() {
+                const currentTime = videoPlayer.currentTime;
+                const duration = videoPlayer.duration;
+                const remainingTime = duration - currentTime;
+
+                if (remainingTime <= oneSecondThreshold) {
+                    console.log("Approximately one second left in the video.");
+                    // You can perform any action here when one second is left.
+                }
+            });
+        };
+    }
+
+    const videoURLs = [
+        'https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/10%20Second%20Video%20Loop.mp4?alt=media&token=cc7c05c1-096d-438c-86c6-6926bfadab3d&_gl=1*4tt09d*_ga*MTEzODEyOTU5LjE2OTU4MjI2OTU.*_ga_CW55HF8NVT*MTY5OTAyOTY2MC4yMy4xLjE2OTkwMzA3OTMuNjAuMC4w',
+        'https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/Funny%202%20second%20video.mp4?alt=media&token=0dbb5423-c981-40d2-bac2-29ad62c5a6ea&_gl=1*1kosqn8*_ga*MTEzODEyOTU5LjE2OTU4MjI2OTU.*_ga_CW55HF8NVT*MTY5OTAzNDg2NC4yNC4wLjE2OTkwMzQ4NjQuNjAuMC4w'
+    ]
+    let videoIdx = 0
+
+    // setInterval(() => {
+    //     console.log("time out")
+    //     console.log(videoIdx)
+    //     preloadAndChangeVideo(videoURLs[videoIdx])
+    //     videoIdx++
+    //     if (videoIdx >= videoURLs.length)
+    //         videoIdx = 0
+    // }, 3000)
+
+
+</script>
 </body>
 </html>
