@@ -1,230 +1,53 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>CCTV Admin Portal</title>
-</head>
-<body class="m-2">
-    <div id="sign-in">sign in</div>
-    <h2>CCTV Admin Portal</h2>
-    <label for="client-dropdown">Select a client:</label>
-    <select id="client-dropdown">
-        <option value="" disabled selected>Select an option</option>
-    </select>
-    <a href="add-client">Add Client</a>
-    <br>
-    <label for="dropdown">Select a device:</label>
-    <select id="dropdown">
-        <option value="" disabled selected>Select an option</option>
-    </select>
-    <a id="add-device" href="/">Add Device to client</a>
-    <br>
-    <p id="device-url">Select device to get device URL</p>
-    <a href="https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/background.jpg?alt=media&token=c8225ab3-8030-4973-8ebe-82a477771b19&_gl=1*1wny6kq*_ga*MTEzODEyOTU5LjE2OTU4MjI2OTU.*_ga_CW55HF8NVT*MTY5NjAxOTk1Ny44LjEuMTY5NjAyMDE5MS42MC4wLjA." target="_blank">Ad Image Template</a>
-    <br>
-    <a href="https://console.firebase.google.com/u/0/project/adtv-64129/storage/adtv-64129.appspot.com/files" target="_blank">Upload images or .mp4 files here and enter the URL below</a>
-    <br>
-    <br>
-    <form id="userForm">
-        <label for="name">Media Link:</label>
-        <input type="text" id="name" name="name" required>
-        <input type="submit" value="Add Media"><br><br>
-    </form>
-    <h4>Media:</h4>
-    <div id="images"></div>
-    <button id="upload">Confirm Updates</button>
-</body>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC8gcLnkEkvZ4osnSoUcBY1ZoizleHSLsw",
-    authDomain: "adtv-64129.firebaseapp.com",
-    projectId: "adtv-64129",
-    storageBucket: "adtv-64129.appspot.com",
-    messagingSenderId: "1051852504406",
-    appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const signInText = document.getElementById('sign-in')
-
-function signInWithGoogle() {
-    var provider = new GoogleAuthProvider();  
-    signInWithPopup(auth, provider)
-        .then(function (result) {
-            var user = result.user;
-            console.log('Signed in as: ' + user.displayName);
-        })
-        .catch(function (error) {
-            console.error('Google Sign-In Error:', error);
-        });
-}
-
-auth.onAuthStateChanged(user => {
-        if (!user) {
-            console.log("logged out")
-            signInText.innerText = `Click here to sign in`
-        } else {
-            console.log("logged in", user)
-            signInText.innerText = `${user.email} ${user.displayName} Admin ${user.displayName} Top G`
-            init()
-        }
-    });
-
-async function getToken() {
-    return await getAuth().currentUser?.getIdToken()
-}
-
-signInText.addEventListener('click', () => {
-    signInWithGoogle()
-})
-
-const baseURL = "https://cc-tv.onrender.com/"
-// const baseURL = "http://localhost:3000/"
-let clients = []
-let devices = []
-let deviceIdx = -1
-let copyText = ""
-
-async function init() {
-    const dropdown = document.getElementById("client-dropdown");
-    const deviceDropdown = document.getElementById("dropdown");
-    const deviceURL = document.getElementById("device-url")
-
-    function updateDeviceDropDown(clientId) {
-        fetch(baseURL + `devices/${clientId}`, {
-            headers: {
-                "Authorization": token
+    <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <title>CCTV Admin Portal</title>
+        <style>
+            .max-width-500 {
+                width: 700px
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            devices = data
-            deviceDropdown.innerHTML = '<option value="" disabled selected>Select an option</option>'
-            data.forEach(c => {
-                const optionElement = document.createElement("option");
-                optionElement.value = c._id; // Replace with the appropriate property from your data
-                optionElement.textContent = c.name; // Replace with the appropriate property from your data
-                deviceDropdown.appendChild(optionElement);
-            });
-        })
-        .catch(error => {
-            console.error("Error fetching data: ", error);
-        });
-    }
-
-    const token = await getToken()
-    fetch(baseURL + 'clients', {
-        headers: {
-            "Authorization": token
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        clients = data
-        console.log(data)
-        data.forEach(c => {
-            const optionElement = document.createElement("option");
-            optionElement.value = c._id; // Replace with the appropriate property from your data
-            optionElement.textContent = c.name; // Replace with the appropriate property from your data
-            dropdown.appendChild(optionElement);
-        });
-    })
-    .catch(error => {
-        console.error("Error fetching data: ", error);
-    });
-
-    dropdown.addEventListener('change', () => {
-        const selectedOption = dropdown.options[dropdown.selectedIndex];
-        const clientId = selectedOption.value;
-        const clientName = selectedOption.text;
-        const url = `add-device?clientId=${clientId}&clientName=${clientName}`;
-        document.getElementById('add-device').href = url;
-        updateDeviceDropDown(clientId)
-    })
-
-    deviceDropdown.addEventListener('change', () => {
-        const selectedOption = dropdown.options[dropdown.selectedIndex];
-        const clientId = selectedOption.value;
-        const clientName = selectedOption.text;
-        deviceIdx = deviceDropdown.selectedIndex - 1
-        imageURLS = devices[deviceIdx].images ? devices[deviceIdx].images : []
-        deviceURL.innerHTML = baseURL + 'obs?deviceId=' + devices[deviceIdx]._id
-        updateImages()
-    })
-
-};
-
-let imageURLS = []
-const imagesDiv = document.getElementById("images")
-
-function updateImages() {
-    let newHtml = ""
-    for (var i in imageURLS) {
-        const url = imageURLS[i]
-        if (`${url}`.includes(".mp4"))
-            newHtml += `<a href="${url}" target="_blank"><video id="nextVideo" autoplay muted loop controls height="200" src="${url}"></video></a>`
-        else
-            newHtml += `<a href="${url}" target="_blank"><img src="${url}" alt="Click to view image, this url is probably wrong" style="height:200px"/></a>`
-        newHtml += `<button id="${i}">Remove Image</button>`
-        newHtml += '<br>'
-        newHtml += '<br>'
-    }
-    imagesDiv.innerHTML = newHtml
-    for (i in imageURLS) {
-        document.getElementById(i).addEventListener('click', () => {
-            imageURLS.pop(i)
-            updateImages()
-        })
-    }
-}
-
-const userForm = document.getElementById("userForm");
-
-userForm.addEventListener("submit", function(event) {
-    if (deviceIdx == -1) {
-        alert("Select a device before adding images")
-        return
-    }
-    event.preventDefault();
-    const nameElement = document.getElementById("name")
-    const name = nameElement.value
-    imageURLS.push(name)
-    nameElement.value = ""
-    updateImages()
-})
-
-document.getElementById('upload').addEventListener('click', async () => {
-    if (deviceIdx == -1) {
-        alert("Please select a device to change images.")
-        return
-    }
-    const token = await getToken()
-    fetch(baseURL + `device-images/${devices[deviceIdx]._id}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": token
-        },
-        body: JSON.stringify(imageURLS)
-    })
-    .then(response => {
-        if (response.ok) {
-            alert("Success!")
-        } else {
-            alert("There was an error adding this client. Please try again.")
-        }
-    })
-    .catch(error => {
-        console.error("Fetch error: ", error);
-    });
-})
-
-</script>
-
-
+        </style>
+    </head>
+    <body class="m-2">
+        <div class="container mt-5  max-width-500">
+        <div class="mx-auto">
+        <div id="sign-in">sign in</div>
+        <h2>CCTV Admin Portal</h2>
+        <label for="client-dropdown">Select a client:</label>
+        <select id="client-dropdown">
+            <option value="" disabled selected>Select an option</option>
+        </select>
+        <a href="add-client">Add Client</a>
+        <br>
+        <label for="dropdown">Select a device:</label>
+        <select id="dropdown">
+            <option value="" disabled selected>Select an option</option>
+        </select>
+        <a id="add-device" href="/">Add Device to client</a>
+        <br>
+        <p id="device-url">Select device to get device URL</p>
+        <a href="https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/background.jpg?alt=media&token=c8225ab3-8030-4973-8ebe-82a477771b19&_gl=1*1wny6kq*_ga*MTEzODEyOTU5LjE2OTU4MjI2OTU.*_ga_CW55HF8NVT*MTY5NjAxOTk1Ny44LjEuMTY5NjAyMDE5MS42MC4wLjA." target="_blank">Ad Image Template</a>
+        <br>
+        <a href="https://console.firebase.google.com/u/0/project/adtv-64129/storage/adtv-64129.appspot.com/files" target="_blank">Upload images or .mp4 files here and enter the URL below</a>
+        <br>
+        <br>
+        <form>
+            <label for="default">Default Duration in Seconds: </label>
+            <input type="number" id="default" name="default" required value="12">
+        </form>
+        <form id="userForm">
+            <label for="name">Media Link:</label>
+            <input type="text" id="name" name="name" required>
+            <input type="submit" value="Add Media"><br><br>
+        </form>
+        <h4>Media:</h4>
+        </div>
+        <form id="mediaForm">
+            <div id="images"></div>
+            <input type="submit" value="Confirm Updates" class="max-width-500">
+        </form>
+    </div>
+    </body>
+    <script type="module" src="index.js"></script>
 </html>
