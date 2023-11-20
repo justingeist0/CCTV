@@ -44,6 +44,7 @@ async function getToken() {
 signInText.addEventListener('click', () => {
     signInWithGoogle()
 })
+
 let clients = []
 let devices = []
 let deviceIdx = -1
