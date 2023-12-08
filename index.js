@@ -1,4 +1,4 @@
-const { run, getClients, storeClient, getDevices, storeDevice, setDeviceImages, getDevice } = require('./db')
+const { run, getClients, storeClient, updateClient, getDevices, storeDevice, setDeviceImages, setDeviceData, getDevice } = require('./db')
 
 var admin = require("firebase-admin");
 var serviceAccount = require("./firebase-admin.json");
@@ -22,7 +22,7 @@ app.set('view engine', 'ejs');
 app.use(express.static('public', { extensions: ['html'] }));
 app.use(bodyParser.json());
 
-const port = 3000;
+const port = 8080;
 
 const authenticateUser = (req, res, next) => {
   const idToken = req.headers.authorization;
@@ -36,7 +36,6 @@ const authenticateUser = (req, res, next) => {
     .verifyIdToken(idToken)
     .then((decodedToken) => {
       req.user = decodedToken;
-      console.log(decodedToken.email)
       for (var i in admins) {
         if (admins[i] == decodedToken.email)
           return next();
@@ -62,28 +61,44 @@ app.get('/get-version', async (req, res) => {
 app.post('/add-client', authenticateUser, async (req, res) => {
   const clientData = req.body;
   const store = await storeClient(clientData)
-  console.log(store)
+  res.json(store);
+});
+
+app.post('/update-client', authenticateUser, async (req, res) => {
+  const clientData = req.body;
+  const store = await updateClient(clientData)
   res.json(store);
 });
 
 app.post('/add-device', authenticateUser, async (req, res) => {
-  const clientData = req.body;
-  const store = await storeDevice(clientData)
-  clientData['_id'] = store.insertedId
-  res.json(clientData);
+  const deviceData = req.body;
+  const store = await storeDevice(deviceData)
+  deviceData['_id'] = store.insertedId
+  res.json(deviceData);
 });
 
 
 app.post('/device-images/:id', authenticateUser, async (req, res) => {
     const id = req.params.id;
     const images = req.body;
-    console.log("id: ", id, "images: ", images)
     const result = await setDeviceImages(id, images)
     if (result) {
-        res.status(400)
+        res.status(200).json({})
     } else {
         res.status(404).json({ error: 'Data not found for the provided ID' });
     }
+});
+
+
+app.put('/devices/:id', authenticateUser, async (req, res) => {
+  const id = req.params.id;
+  const deviceData = req.body;
+  const result = await setDeviceData(id, deviceData)
+  if (result) {
+      res.status(200).json({ok: true})
+  } else {
+      res.status(404).json({ error: 'Data not found for the provided ID' });
+  }
 });
 
 app.get('/clients', authenticateUser, async (req, res) => {

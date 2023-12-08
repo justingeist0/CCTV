@@ -33,7 +33,19 @@ async function getClients() {
   
 async function storeClient(data) {
     const collection = database.collection(clientCollection)
-    return await collection.insertOne({"name": data.name})
+    return await collection.insertOne({"name": data.name, "address": data.address, "phone": data.address})
+}
+
+async function updateClient(data) {
+  const collection = database.collection(clientCollection)
+  if (data.name === "") {
+    return await collection.deleteOne({"_id": new ObjectId(data._id)})
+  }
+  console.log(data)
+  return await collection.updateOne(
+    {"_id": new ObjectId(data._id)}, 
+    {$set: {"name": data.name, "address": data.address, "phone": data.phone}}
+  )
 }
 
 async function getDevices(clientId) {
@@ -44,12 +56,12 @@ async function getDevices(clientId) {
 
 async function getDevice(deviceId) {
     const collection = database.collection(deviceCollection)
-    let clients = await collection.find({"_id": new ObjectId(deviceId)}).toArray()
+    const projection = { images: 0 };
+    let clients = await collection.find({"_id": new ObjectId(deviceId)}).project(projection).toArray()
     return clients
 }
   
 async function storeDevice(data) {
-    console.log("storing", data)
     data['images'] = []
     const collection = database.collection(deviceCollection)
     return await collection.insertOne(data)
@@ -63,5 +75,18 @@ async function setDeviceImages(deviceObjectId, images) {
     console.log(result)
     return result;
 }
+  
+async function setDeviceData(deviceObjectId, data) {
+    const collection = database.collection(deviceCollection);
+    if (data.name === "") {
+      console.log("Deleting ", data)
+      return await collection.deleteOne({"_id": new ObjectId(data._id)})
+    }
+    const filter = { _id: new ObjectId(deviceObjectId) };
+    const update = { $set: { images: data.images, "name": data.name, "password": data.password, "remoteLink": data.remoteLink } };
+    const result = await collection.updateOne(filter, update);
+    console.log(result)
+    return result;
+}
 
-module.exports = { run, getClients, storeClient, getDevices, storeDevice, setDeviceImages, getDevice }
+module.exports = { run, getClients, storeClient, updateClient, getDevices, storeDevice, setDeviceImages, setDeviceData, getDevice }
