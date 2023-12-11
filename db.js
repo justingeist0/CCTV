@@ -56,7 +56,7 @@ async function getDevices(clientId) {
 
 async function getDevice(deviceId) {
     const collection = database.collection(deviceCollection)
-    const projection = { images: 0 };
+    const projection = { images: 1 };
     let clients = await collection.find({"_id": new ObjectId(deviceId)}).project(projection).toArray()
     return clients
 }

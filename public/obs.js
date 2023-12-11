@@ -95,6 +95,7 @@ async function fetchLatestImages() {
         .then(response => response.json())
         .then(data => {
             clients = data
+            console.log(data)
             const images = data[0].images
             updateImageUrls(images)
         })
