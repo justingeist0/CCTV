@@ -1,13 +1,18 @@
 let imageUrls = [];
 let imageCache = [];
 let imgIdx = 0
+let isInSynceWithOtherDevices = false
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
-const deviceId = urlParams.get('deviceId');
+const urlDeviceId = urlParams.get('deviceId');
+
+let requestDeviceId = urlDeviceId
+
 let imageChangeTimeout;
 
 function updateImageUrls(newUrls) {
+    if (newUrls.length == 0) return console.log("No images found")
     if (newUrls.length == imageUrls.length) {
         let allEqual = true
         for (var i = 0; i < newUrls.length; i++) 
@@ -34,6 +39,8 @@ function updateImageUrls(newUrls) {
         imgIdx = 0
     
     setTimerForNextImage()
+    if (isInSynceWithOtherDevices)
+        initWs()
 }
 
 const videoElement = document.getElementById('video');
@@ -91,12 +98,26 @@ videoElement.addEventListener('loadeddata', function() {
 });
 
 async function fetchLatestImages() {
-    fetch('/device/' + deviceId)
+    fetch('/device/' + requestDeviceId)
         .then(response => response.json())
         .then(data => {
-            clients = data
             console.log(data)
             const images = data[0].images
+            const mirrorDeviceId = data[0].mirrorDeviceId
+
+            if (mirrorDeviceId != null && mirrorDeviceId != requestDeviceId) {
+                requestDeviceId = mirrorDeviceId
+                fetchLatestImages()
+            }
+
+            if (mirrorDeviceId == null && requestDeviceId != urlDeviceId) {
+                requestDeviceId = urlDeviceId
+                fetchLatestImages()
+            }
+        
+            console.log(mirrorDeviceId, requestDeviceId)
+            isInSynceWithOtherDevices = mirrorDeviceId == requestDeviceId
+
             updateImageUrls(images)
         })
         .catch(error => {
@@ -104,15 +125,20 @@ async function fetchLatestImages() {
         });
 }
 
-function setTimerForNextImage() {
-    clearTimeout(imageChangeTimeout)
-    changeImage(imgIdx);
-    const nextImageDuration = parseInt(imageUrls[imgIdx].duration) * 1000;
-    imageChangeTimeout = setTimeout(setTimerForNextImage, nextImageDuration);
-    imgIdx += 1;
+function setTimerForNextImage(serverIdx = imgIdx) {
+    imgIdx = serverIdx
     if (imgIdx >= imageCache.length) {
         imgIdx = 0;
     }
+    
+    clearTimeout(imageChangeTimeout)
+    changeImage(imgIdx);
+
+    let nextImageDuration = parseInt(imageUrls[imgIdx].duration) * 1000;
+    if (isInSynceWithOtherDevices) //Add a buffer
+        nextImageDuration += 3000
+    imageChangeTimeout = setTimeout(setTimerForNextImage, nextImageDuration);
+    imgIdx += 1;
 }
 
 async function getVersion() {
@@ -123,7 +149,7 @@ async function getVersion() {
         })
         .catch(error => {
             console.error("Error fetching data: ", error);
-            throw error; // Optionally re-throw the error if needed.
+            throw error; // Optionally re-throw the error if needed. 
         });
 }
 
@@ -140,4 +166,39 @@ setInterval(async () => {
         location.reload()
     }
     await fetchLatestImages()
-}, 60000)
+}, 600000)
+
+
+let ws;
+const websocketURL = "wss://cc-tv.onrender.com"//`ws://${window.location.hostname}:8080`;//
+let isConnected = false
+
+function initWs() {
+    console.log("init ws")
+    if (ws) {
+        ws.onerror = ws.onopen = ws.onclose = null;
+        ws.close();
+    }
+    ws = new WebSocket(websocketURL);
+    ws.onopen = () => {
+        console.log("Connected")
+        isConnected = true
+        ws.send(JSON.stringify({deviceId: requestDeviceId}));
+    }
+    ws.onmessage = ({ data }) => {
+        // Messages is Json that is {  }
+        let json = JSON.parse(data);
+        console.log(json)
+        updateImageUrls(json.images)
+        setTimerForNextImage(json.currentIdx)
+        // Message to display a new image and update the image lists to the newest. Hot refresh is possible here.
+    };
+    ws.onclose = async () => {
+        console.log("Disconnected")
+        isConnected = false
+        while (!isConnected) {
+            await new Promise(resolve => setTimeout(resolve, 4000))
+            initWs()
+        }
+    }
+}

@@ -56,7 +56,7 @@ async function getDevices(clientId) {
 
 async function getDevice(deviceId) {
     const collection = database.collection(deviceCollection)
-    const projection = { images: 1 };
+    const projection = { images: 1, mirrorDeviceId: 1 };
     let clients = await collection.find({"_id": new ObjectId(deviceId)}).project(projection).toArray()
     return clients
 }
@@ -83,7 +83,7 @@ async function setDeviceData(deviceObjectId, data) {
       return await collection.deleteOne({"_id": new ObjectId(data._id)})
     }
     const filter = { _id: new ObjectId(deviceObjectId) };
-    const update = { $set: { images: data.images, "name": data.name, "password": data.password, "remoteLink": data.remoteLink } };
+    const update = { $set: { images: data.images, "name": data.name, "password": data.password, "remoteLink": data.remoteLink, "mirrorDeviceId": data.mirrorDeviceId } };
     const result = await collection.updateOne(filter, update);
     console.log(result)
     return result;

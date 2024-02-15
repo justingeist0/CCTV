@@ -14,8 +14,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
+const WebSocket = require('ws');
 app.use(cors())
-const version = 1
+const version = 2
 
 app.set('view engine', 'ejs');
 
@@ -112,6 +113,130 @@ app.get('/devices/:id', authenticateUser, async (req, res) => {
   res.json(data)
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+const wss = new WebSocket.Server({ server });
+let connections = []
+
+
+class WSManager {
+  constructor() {
+    this.slides = {}
+    this.ids = []
+    this.startTimer()
+  }
+
+  startTimer() {
+    setInterval(() => {
+      this.ids.forEach(id => {
+        const slide = this.slides[id]
+        if (slide == null) {
+          return
+        }
+        if (slide.images.length == 0) {
+          return
+        }
+        slide.tick()
+      })
+    }, 1000)
+  }
+
+  async addConnection(ws, id) {
+    if (this.slides[id] == null) {
+      const newSlide = new SlideManager(id)
+      await newSlide.fetchImages()
+      this.slides[id] = newSlide
+      this.ids.push(id)
+    } 
+    console.log('adding conecction' , this.slides)
+    this.slides[id].add(ws)
+  }
+
+  remove(ws) {
+    console.log('removing connection')
+    this.ids.forEach(id => {
+      const slide = this.slides[id]
+      if (slide == null) {
+        return
+      }
+      slide.remove(ws)
+    })
+  }
+
+}
+
+class SlideManager {
+  constructor(id) {
+    this.id = id
+    this.connections = []
+    
+    this.images = []
+    this.currentIdx = 0
+    this.currentImage;
+    this.duration = 0;
+  }
+  async fetchImages() {
+    const deviceImages = await getDevice(this.id)
+    this.images = deviceImages[0].images
+
+    if (this.images.length == 0) {
+      return
+    }
+
+    this.currentIdx = 0
+  }
+
+  setTimerForNextImage() {
+    if (this.currentIdx >= this.images.length) {
+      this.currentIdx = 0;
+    }
+    this.duration = parseInt(this.images[this.currentIdx].duration);
+  }
+
+  add(ws) {
+    this.connections.push(ws)
+    ws.send(JSON.stringify({currentIdx: this.currentIdx, images: this.images}))
+  }
+
+  remove(ws) {
+    console.log(this.connections.length, 'before removing connection')
+    this.connections = this.connections.filter(c => c !== ws)
+    console.log(this.connections.length, 'after removing connection')
+  }
+
+  tick() {
+    this.duration -= 1;
+    if (this.duration <= 0 && this.images.length > 0) {
+      this.currentIdx += 1
+      this.setTimerForNextImage()
+      console.log("tick", this.duration, this.images.length, this.currentIdx)
+      this.connections.forEach(c => {
+        c.send(JSON.stringify({currentIdx: this.currentIdx, images: this.images}))
+      })
+    }
+  }
+}
+
+const wsManager = new WSManager()
+
+// Web sockets
+wss.on('connection', function connection(ws) {
+
+  ws.on('message', function message(data) {
+    let jsonData;
+    try {
+        jsonData = JSON.parse(data);
+    } catch (e) {
+        console.error("Could not parse JSON: ", e);
+    }
+    wsManager.addConnection(ws, jsonData.deviceId)
+});
+
+  ws.on('close', () => {
+    wsManager.remove(ws)
+  });
+  
+});
+
