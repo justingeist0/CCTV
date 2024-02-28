@@ -121,7 +121,7 @@ async function fetchLatestImages() {
             updateImageUrls(images)
         })
         .catch(error => {
-            console.error("Error fetching data: ", error);
+            location.reload()
         });
 }
 
@@ -202,8 +202,3 @@ function initWs() {
         }
     }
 }
-
-setTimeout(() => {
-    //reload window
-    location.reload()
-}, 10000);
