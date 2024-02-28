@@ -16,7 +16,7 @@ const cors = require('cors');
 const app = express();
 const WebSocket = require('ws');
 app.use(cors())
-const version = 2
+const version = 3
 
 app.set('view engine', 'ejs');
 
@@ -68,6 +68,9 @@ app.post('/add-client', authenticateUser, async (req, res) => {
 app.post('/update-client', authenticateUser, async (req, res) => {
   const clientData = req.body;
   const store = await updateClient(clientData)
+  if (wsManager.slides[clientData._id] != null) {
+    wsManager.slides[clientData._id].fetchImages()
+  }
   res.json(store);
 });
 

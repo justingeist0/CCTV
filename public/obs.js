@@ -202,3 +202,8 @@ function initWs() {
         }
     }
 }
+
+setTimeout(() => {
+    //reload window
+    location.reload()
+}, 10000);
