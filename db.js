@@ -41,7 +41,6 @@ async function updateClient(data) {
   if (data.name === "") {
     return await collection.deleteOne({"_id": new ObjectId(data._id)})
   }
-  console.log(data)
   return await collection.updateOne(
     {"_id": new ObjectId(data._id)}, 
     {$set: {"name": data.name, "address": data.address, "phone": data.phone}}
@@ -58,6 +57,10 @@ async function getDevice(deviceId) {
     const collection = database.collection(deviceCollection)
     const projection = { images: 1, mirrorDeviceId: 1 };
     let clients = await collection.find({"_id": new ObjectId(deviceId)}).project(projection).toArray()
+    if (clients.length > 0 && clients[0].images.length == 1) {
+        const image = clients[0].images[0]
+        clients[0].images = [image, image]
+    }
     return clients
 }
   
@@ -72,20 +75,17 @@ async function setDeviceImages(deviceObjectId, images) {
     const filter = { _id: new ObjectId(deviceObjectId) };
     const update = { $set: { images: images } };
     const result = await collection.updateOne(filter, update);
-    console.log(result)
     return result;
 }
   
 async function setDeviceData(deviceObjectId, data) {
     const collection = database.collection(deviceCollection);
     if (data.name === "") {
-      console.log("Deleting ", data)
       return await collection.deleteOne({"_id": new ObjectId(data._id)})
     }
     const filter = { _id: new ObjectId(deviceObjectId) };
     const update = { $set: { images: data.images, "name": data.name, "password": data.password, "remoteLink": data.remoteLink, "mirrorDeviceId": data.mirrorDeviceId } };
     const result = await collection.updateOne(filter, update);
-    console.log(result)
     return result;
 }
 

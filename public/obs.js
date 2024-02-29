@@ -1,7 +1,6 @@
-let imageUrls = [];
-let imageCache = [];
 let imgIdx = 0
 let isInSynceWithOtherDevices = false
+let media = []
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
@@ -11,58 +10,71 @@ let requestDeviceId = urlDeviceId
 
 let imageChangeTimeout;
 
+const mediaContainer = document.getElementById('media-container');
+
 function updateImageUrls(newUrls) {
     if (newUrls.length == 0) return console.log("No images found")
-    if (newUrls.length == imageUrls.length) {
+    if (newUrls.length == media.length) {
         let allEqual = true
         for (var i = 0; i < newUrls.length; i++) 
-            if (newUrls[i].url != imageUrls[i].url || newUrls[i].duration != imageUrls[i].duration) {
+            if (newUrls[i].url != media[i].url || newUrls[i].duration != media[i].duration) {
                 allEqual = false
             }
         if (allEqual) return 
     }
-    imageUrls = newUrls
+
+    media = newUrls
     imageCache = []
-    imageUrls.forEach(image => {
-        const url = image.url
+    mediaContainer.innerHTML = ''
+    media.forEach((m, index) => {
+        const url = m.url
         if (url.includes('.mp4')) {
-            const preloadVideo = document.createElement("video");
-            preloadVideo.src = url;
-            imageCache.push(preloadVideo)
+            const video = document.createElement("video");
+            video.src = url;
+            video.id = `nextVideo${index}`;
+            video.autoplay = true;
+            video.muted = true;
+            video.loop = true;
+            video.controls = false;
+            video.width = "1920";
+            video.height = "1080";
+            mediaContainer.appendChild(video);
         } else {
-            const image = new Image();
+            const image = document.createElement("img");
             image.src = url;
-            imageCache.push(image);
+            image.id = `nextImage${index}`;
+            image.alt = "Image";
+            image.style.width = "1920px";
+            image.style.height = "1080px";
+            mediaContainer.appendChild(image);
         }
-    });
-    if (imgIdx >= imageUrls.length)
+    })
+
+    if (imgIdx >= media.length)
         imgIdx = 0
     
     setTimerForNextImage()
+
     if (isInSynceWithOtherDevices)
         initWs()
 }
 
-const videoElement = document.getElementById('video');
-const nextVideoElement = document.getElementById('nextVideo');
 
 function changeImage(index) {
-    if (index >= 0 && index < imageCache.length) {
-        const imageElement = document.getElementById('image');
-        const nextImage = document.getElementById('nextImage');
-        const newSrc = imageCache[index].src
-        const isVideo = newSrc.includes('.mp4')
+    if (index >= 0 && index < media.length) {
+        const elementsInDivArray = Array.from(mediaContainer.children);
+        const futureElement = elementsInDivArray[index];
+        elementsInDivArray.forEach((element, i) => {
+            if (i == index) {
+                element.style.zIndex = 1;
+            } else {
+                element.style.zIndex = 0;
+            }
+        });
+        const isVideo = futureElement.src.includes('.mp4')
         if (isVideo){
-            nextVideoElement.style.opacity = 1
-            nextImage.style.opacity = 0
-            nextVideoElement.src = newSrc;
+            futureElement.currentTime = 0
         }
-        else {
-            nextVideoElement.style.opacity = 0
-            nextImage.style.opacity = 1
-            nextImage.src = newSrc;
-        }
-
         const animationDuration = 1000; 
         const startTime = performance.now();
         function animate() {
@@ -70,20 +82,18 @@ function changeImage(index) {
             const elapsedTime = currentTime - startTime;
             const progress = Math.min(elapsedTime / animationDuration, 1);
 
-            if (imageElement.style.opacity == 0)
-                videoElement.style.opacity = 1 - progress;
-            else
-                imageElement.style.opacity = 1 - progress;
+            futureElement.style.opacity = progress;
 
             if (progress < 1) {
                 requestAnimationFrame(animate);
-            } else if (isVideo) {
-                videoElement.src = newSrc;
-                imageElement.style.opacity = 0;
             } else {
-                imageElement.src = newSrc;
-                imageElement.style.opacity = 1;
-                videoElement.style.opacity = 0;
+                elementsInDivArray.forEach((element, i) => {
+                    if (i == index) {
+                        element.style.opacity = 1;
+                    } else {
+                        element.style.opacity = 0;
+                    }
+                });
             }
         }
 
@@ -91,53 +101,48 @@ function changeImage(index) {
     }
 }
 
-videoElement.addEventListener('loadeddata', function() {
-    // Code to execute when the video has fully loaded
-    videoElement.currentTime = nextVideoElement.currentTime
-    videoElement.style.opacity = 1;
-});
-
 async function fetchLatestImages() {
     fetch('/device/' + requestDeviceId)
         .then(response => response.json())
         .then(data => {
-            console.log(data)
-            const images = data[0].images
             const mirrorDeviceId = data[0].mirrorDeviceId
 
             if (mirrorDeviceId != null && mirrorDeviceId != requestDeviceId) {
                 requestDeviceId = mirrorDeviceId
                 fetchLatestImages()
+                return
             }
 
             if (mirrorDeviceId == null && requestDeviceId != urlDeviceId) {
                 requestDeviceId = urlDeviceId
                 fetchLatestImages()
+                return
             }
         
-            console.log(mirrorDeviceId, requestDeviceId)
             isInSynceWithOtherDevices = mirrorDeviceId == requestDeviceId
 
-            updateImageUrls(images)
+            updateImageUrls(data[0].images)
         })
         .catch(error => {
-            location.reload()
+            console.error("Error fetching data: ", error);
         });
 }
 
 function setTimerForNextImage(serverIdx = imgIdx) {
     imgIdx = serverIdx
-    if (imgIdx >= imageCache.length) {
+
+    if (imgIdx >= media.length) {
         imgIdx = 0;
     }
-    
+
     clearTimeout(imageChangeTimeout)
     changeImage(imgIdx);
 
-    let nextImageDuration = parseInt(imageUrls[imgIdx].duration) * 1000;
-    if (isInSynceWithOtherDevices) //Add a buffer
+    let nextImageDuration = parseInt(media[imgIdx].duration) * 1000;
+    if (isInSynceWithOtherDevices)
         nextImageDuration += 3000
     imageChangeTimeout = setTimeout(setTimerForNextImage, nextImageDuration);
+
     imgIdx += 1;
 }
 
@@ -174,27 +179,23 @@ const websocketURL = "wss://cc-tv.onrender.com"//`ws://${window.location.hostnam
 let isConnected = false
 
 function initWs() {
-    console.log("init ws")
     if (ws) {
         ws.onerror = ws.onopen = ws.onclose = null;
         ws.close();
     }
     ws = new WebSocket(websocketURL);
     ws.onopen = () => {
-        console.log("Connected")
         isConnected = true
         ws.send(JSON.stringify({deviceId: requestDeviceId}));
     }
     ws.onmessage = ({ data }) => {
         // Messages is Json that is {  }
         let json = JSON.parse(data);
-        console.log(json)
         updateImageUrls(json.images)
         setTimerForNextImage(json.currentIdx)
         // Message to display a new image and update the image lists to the newest. Hot refresh is possible here.
     };
     ws.onclose = async () => {
-        console.log("Disconnected")
         isConnected = false
         while (!isConnected) {
             await new Promise(resolve => setTimeout(resolve, 4000))

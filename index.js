@@ -16,7 +16,7 @@ const cors = require('cors');
 const app = express();
 const WebSocket = require('ws');
 app.use(cors())
-const version = 3
+const version = 4
 
 app.set('view engine', 'ejs');
 
@@ -68,9 +68,6 @@ app.post('/add-client', authenticateUser, async (req, res) => {
 app.post('/update-client', authenticateUser, async (req, res) => {
   const clientData = req.body;
   const store = await updateClient(clientData)
-  if (wsManager.slides[clientData._id] != null) {
-    wsManager.slides[clientData._id].fetchImages()
-  }
   res.json(store);
 });
 
@@ -98,6 +95,9 @@ app.put('/devices/:id', authenticateUser, async (req, res) => {
   const id = req.params.id;
   const deviceData = req.body;
   const result = await setDeviceData(id, deviceData)
+  if (wsManager.slides[id] != null) {
+    wsManager.slides[id].fetchImages()
+  }
   if (result) {
       res.status(200).json({ok: true})
   } else {
@@ -204,9 +204,7 @@ class SlideManager {
   }
 
   remove(ws) {
-    console.log(this.connections.length, 'before removing connection')
     this.connections = this.connections.filter(c => c !== ws)
-    console.log(this.connections.length, 'after removing connection')
   }
 
   tick() {
@@ -214,7 +212,6 @@ class SlideManager {
     if (this.duration <= 0 && this.images.length > 0) {
       this.currentIdx += 1
       this.setTimerForNextImage()
-      console.log("tick", this.duration, this.images.length, this.currentIdx)
       this.connections.forEach(c => {
         c.send(JSON.stringify({currentIdx: this.currentIdx, images: this.images}))
       })
