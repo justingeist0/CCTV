@@ -203,3 +203,11 @@ function initWs() {
         }
     }
 }
+
+setTimeout(() => {
+    const elementsInDivArray = Array.from(mediaContainer.children);
+    const isEmpty = elementsInDivArray.length == 0
+    if (isEmpty || media.length == 0) {
+        location.reload()
+    }
+}, 10000)
