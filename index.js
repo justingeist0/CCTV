@@ -37,6 +37,10 @@ const authenticateUser = (req, res, next) => {
     .verifyIdToken(idToken)
     .then((decodedToken) => {
       req.user = decodedToken;
+      const acceptedDomain = '@cityconnect.tv'
+      if (decodedToken.email.endsWith(acceptedDomain)) {
+        return next();
+      }
       for (var i in admins) {
         if (admins[i] == decodedToken.email)
           return next();
