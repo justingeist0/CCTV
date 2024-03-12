@@ -1,12 +1,12 @@
 const { run, getClients, storeClient, updateClient, getDevices, storeDevice, setDeviceImages, setDeviceData, getDevice } = require('./db')
 
 var admin = require("firebase-admin");
-var serviceAccount = require("./firebase-admin.json");
+var serviceAccount = require("./firebase-admin-link.json");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-const admins = ["iimezzooo@gmail.com", "justingeist0@gmail.com", "rylensalvi@gmail.com"]
+const admins = ["iimezzooo@gmail.com", "justingeist0@gmail.com"]
 
 run().catch(console.dir);
 
@@ -37,7 +37,7 @@ const authenticateUser = (req, res, next) => {
     .verifyIdToken(idToken)
     .then((decodedToken) => {
       req.user = decodedToken;
-      const acceptedDomain = '@cityconnect.tv'
+      const acceptedDomain = '@linklocal.tv'
       if (decodedToken.email.endsWith(acceptedDomain)) {
         return next();
       }
