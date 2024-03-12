@@ -1,14 +1,23 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
 
+// const firebaseConfig = {
+//     apiKey: "AIzaSyC8gcLnkEkvZ4osnSoUcBY1ZoizleHSLsw",
+//     authDomain: "adtv-64129.firebaseapp.com",
+//     projectId: "adtv-64129",
+//     storageBucket: "adtv-64129.appspot.com",
+//     messagingSenderId: "1051852504406",
+//     appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
+// };
 const firebaseConfig = {
-    apiKey: "AIzaSyC8gcLnkEkvZ4osnSoUcBY1ZoizleHSLsw",
-    authDomain: "adtv-64129.firebaseapp.com",
-    projectId: "adtv-64129",
-    storageBucket: "adtv-64129.appspot.com",
-    messagingSenderId: "1051852504406",
-    appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
-};
+    apiKey: "AIzaSyDdChm6HnT3sU99CGfEncHBfSRlU9lUPJY",
+    authDomain: "linklocal-c5d8f.firebaseapp.com",
+    projectId: "linklocal-c5d8f",
+    storageBucket: "linklocal-c5d8f.appspot.com",
+    messagingSenderId: "1081605742554",
+    appId: "1:1081605742554:web:ba6886c4fff72bfa1d2ae3",
+    measurementId: "G-ZQEN9XEX3R"
+  };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
