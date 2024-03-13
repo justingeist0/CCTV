@@ -175,7 +175,7 @@ setInterval(async () => {
 
 
 let ws;
-const websocketURL = "wss://cc-tv.onrender.com"//`ws://${window.location.hostname}:8080`;//
+const websocketURL = "wss://linklocal.onrender.com"//"wss://cc-tv.onrender.com"//`ws://${window.location.hostname}:8080`;//
 let isConnected = false
 
 function initWs() {
