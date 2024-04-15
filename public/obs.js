@@ -74,6 +74,7 @@ function changeImage(index) {
         const isVideo = futureElement.src.includes('.mp4')
         if (isVideo){
             futureElement.currentTime = 0
+            futureElement.play()
         }
         const animationDuration = 1000; 
         const startTime = performance.now();
@@ -91,6 +92,9 @@ function changeImage(index) {
                     if (i == index) {
                         element.style.opacity = 1;
                     } else {
+                        if (element.tagName === 'VIDEO') {
+                            element.pause();
+                        }
                         element.style.opacity = 0;
                     }
                 });
