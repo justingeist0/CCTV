@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Fetcher</title>
+</head>
+<body>
+    <div id="content">
+        <!-- Initial content or loading indicator -->
+        Loading content...
+    </div>
+    <video controls preload="auto" src="https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/finalcctvad.mp4?alt=media&token=245644d7-3080-483e-bde9-d4b01557f290"></video>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const video = document.querySelector('video');
+            const content = document.getElementById('content');
+
+            // Function to check if the video is fully loaded
+            function checkFullyLoaded() {
+                if (video.buffered.length > 0) {
+                    const bufferedUntil = video.buffered.end(video.buffered.length - 1);
+                    if (bufferedUntil >= video.duration) {
+                        console.log("Video is fully loaded");
+                        content.style.display = 'none'; // Hide loading indicator
+                        video.play(); // Play the video
+                    }
+                }
+            }
+
+            video.addEventListener('loadedmetadata', () => {
+                console.log("Metadata loaded, video duration is: ", video.duration);
+                checkFullyLoaded(); // Initial check
+            });
+
+            video.addEventListener('progress', checkFullyLoaded); // Check on progress
+
+            video.addEventListener('canplaythrough', () => {
+                console.log("Can play through without buffering under normal conditions");
+                // Optionally start playback here if not waiting for full load
+            });
+
+            video.onerror = () => {
+                console.error("Error loading video");
+                content.textContent = 'Failed to load video.';
+            };
+        });
+    </script>
+</body>
+</html>

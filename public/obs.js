@@ -105,6 +105,7 @@ async function fetchLatestImages() {
     fetch('/device/' + requestDeviceId)
         .then(response => response.json())
         .then(data => {
+            console.log(data)
             const mirrorDeviceId = data[0].mirrorDeviceId
 
             if (mirrorDeviceId != null && mirrorDeviceId != requestDeviceId) {
@@ -175,7 +176,8 @@ setInterval(async () => {
 
 
 let ws;
-const websocketURL = "wss://linklocal.onrender.com"//"wss://cc-tv.onrender.com"//`ws://${window.location.hostname}:8080`;//
+let hostname = window.location.hostname;
+const websocketURL = `wss://${hostname}${hostname === 'localhost' ? ':8080' : ''}`;
 let isConnected = false
 
 function initWs() {
