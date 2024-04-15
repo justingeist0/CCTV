@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Fetcher</title>
+</head>
+<body>
+    <div id="content">
+        <!-- Initial content or loading indicator -->
+        Loading content...
+    </div>
+    <script>
+        const url = 'http://localhost:8080/obs?deviceId=65efc47751ca0e3fb3e1e311'
+        // Function to fetch content from server
+        function fetchContent() {
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // Replace the HTML content
+                    console.log(data)
+                    document.getElementById('content').innerHTML = data;
+                    window.location.href = url
+                    clearInterval(fetchInterval);
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                });
+        }
+
+        // Retry fetching content every 5 seconds until it succeeds
+        var fetchInterval = setInterval(fetchContent, 5000);
+
+        // Initial fetch attempt
+        fetchContent();
+    </script>
+</body>
+</html>
