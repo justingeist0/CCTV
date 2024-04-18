@@ -25,7 +25,6 @@ function downloadVideo(url, video) {
             xhr.onload = (event) => {
                 const blob = xhr.response;
                 const downloadUrl = URL.createObjectURL(blob);
-                console.log("downloaded")
                 if (video)
                     video.src = downloadUrl;
                 // Create an anchor tag to download the blob
@@ -86,7 +85,7 @@ function updateImageUrls(newUrls) {
             video.autoplay = true;
             video.muted = true;
             video.loop = true;
-            //video.controls = false;
+            video.controls = false;
             video.width = "1920";
             video.height = "1080";
             downloadVideo(url, video)
@@ -126,8 +125,6 @@ function changeImage(index) {
         const isVideo = futureElement.src.includes('.mp4')
         if (isVideo) {
             futureElement.currentTime = 0
-            futureElement.play()
-            console.log("playing")
         }
         const animationDuration = 1000; 
         const startTime = performance.now();
@@ -146,8 +143,6 @@ function changeImage(index) {
                         element.style.opacity = 1;
                     } else {
                         if (element.tagName === 'VIDEO') {
-                            element.pause();
-                            console.log("pause")
                         }
                         element.style.opacity = 0;
                     }
@@ -234,7 +229,8 @@ setInterval(async () => {
 
 let ws;
 let hostname = window.location.hostname;
-const websocketURL = `ws://${hostname}${hostname === 'localhost' ? ':8080' : ''}`;
+const isLocal = hostname === 'localhost';
+const websocketURL = (isLocal ? "ws" : "wss") + `://${hostname}${isLocal ? ':8080' : ''}`;
 let isConnected = false
 
 function initWs() {
@@ -252,6 +248,7 @@ function initWs() {
         let json = JSON.parse(data);
         updateImageUrls(json.images)
         setTimerForNextImage(json.currentIdx)
+        console.log("Received new images from server")
         // Message to display a new image and update the image lists to the newest. Hot refresh is possible here.
     };
     ws.onclose = async () => {
