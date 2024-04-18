@@ -16,7 +16,7 @@ const cors = require('cors');
 const app = express();
 const WebSocket = require('ws');
 app.use(cors())
-const version = 4
+const version = Math.random().toString(36).substring(7);
 
 app.set('view engine', 'ejs');
 

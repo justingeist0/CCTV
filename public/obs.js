@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 
-function downloadVideo(url) {
+function downloadVideo(url, video) {
     const httpsReference = ref(storage, url);
 
     getDownloadURL(httpsReference)
@@ -25,19 +25,21 @@ function downloadVideo(url) {
             xhr.onload = (event) => {
                 const blob = xhr.response;
                 const downloadUrl = URL.createObjectURL(blob);
-
+                console.log("downloaded")
+                if (video)
+                    video.src = downloadUrl;
                 // Create an anchor tag to download the blob
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = "video1.mp4";  // Set the desired file name for download
+                // const a = document.createElement('a');
+                // a.href = downloadUrl;
+                // a.download = "video1.mp4";  // Set the desired file name for download
 
-                // Append anchor to body, trigger download, and remove anchor
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                // // Append anchor to body, trigger download, and remove anchor
+                // document.body.appendChild(a);
+                // a.click();
+                // document.body.removeChild(a);
 
-                // Optionally, revoke the blob URL to free up resources
-                URL.revokeObjectURL(downloadUrl);
+                // // Optionally, revoke the blob URL to free up resources
+                // URL.revokeObjectURL(downloadUrl);
             };
             xhr.open('GET', url);
             xhr.send();
@@ -46,8 +48,6 @@ function downloadVideo(url) {
             console.error('Error downloading the file: ', error);
         });
 }
-
-downloadVideo('https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/American%20Barber3%3A20.mp4?alt=media&token=66872f5f-977e-4bec-8010-6a9672e1929f');
 
 let imgIdx = 0
 let isInSynceWithOtherDevices = false
@@ -86,9 +86,10 @@ function updateImageUrls(newUrls) {
             video.autoplay = true;
             video.muted = true;
             video.loop = true;
-            video.controls = false;
+            //video.controls = false;
             video.width = "1920";
             video.height = "1080";
+            downloadVideo(url, video)
             mediaContainer.appendChild(video);
         } else {
             const image = document.createElement("img");
