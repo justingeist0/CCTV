@@ -1,3 +1,54 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-storage.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyC8gcLnkEkvZ4osnSoUcBY1ZoizleHSLsw",
+    authDomain: "adtv-64129.firebaseapp.com",
+    projectId: "adtv-64129",
+    storageBucket: "adtv-64129.appspot.com",
+    messagingSenderId: "1051852504406",
+    appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
+function downloadVideo(url) {
+    const httpsReference = ref(storage, url);
+
+    getDownloadURL(httpsReference)
+        .then((url) => {
+            console.log("downloading")
+            const xhr = new XMLHttpRequest();
+            xhr.responseType = 'blob';
+            xhr.onload = (event) => {
+                const blob = xhr.response;
+                const downloadUrl = URL.createObjectURL(blob);
+
+                // Create an anchor tag to download the blob
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = "video1.mp4";  // Set the desired file name for download
+
+                // Append anchor to body, trigger download, and remove anchor
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Optionally, revoke the blob URL to free up resources
+                URL.revokeObjectURL(downloadUrl);
+            };
+            xhr.open('GET', url);
+            xhr.send();
+        })
+        .catch((error) => {
+            console.error('Error downloading the file: ', error);
+        });
+}
+
+downloadVideo('https://firebasestorage.googleapis.com/v0/b/adtv-64129.appspot.com/o/American%20Barber3%3A20.mp4?alt=media&token=66872f5f-977e-4bec-8010-6a9672e1929f');
+
 let imgIdx = 0
 let isInSynceWithOtherDevices = false
 let media = []
@@ -24,7 +75,7 @@ function updateImageUrls(newUrls) {
     }
 
     media = newUrls
-    imageCache = []
+    //imageCache = []
     mediaContainer.innerHTML = ''
     media.forEach((m, index) => {
         const url = m.url
@@ -72,9 +123,10 @@ function changeImage(index) {
             }
         });
         const isVideo = futureElement.src.includes('.mp4')
-        if (isVideo){
+        if (isVideo) {
             futureElement.currentTime = 0
             futureElement.play()
+            console.log("playing")
         }
         const animationDuration = 1000; 
         const startTime = performance.now();
@@ -94,6 +146,7 @@ function changeImage(index) {
                     } else {
                         if (element.tagName === 'VIDEO') {
                             element.pause();
+                            console.log("pause")
                         }
                         element.style.opacity = 0;
                     }
@@ -109,7 +162,6 @@ async function fetchLatestImages() {
     fetch('/device/' + requestDeviceId)
         .then(response => response.json())
         .then(data => {
-            console.log(data)
             const mirrorDeviceId = data[0].mirrorDeviceId
 
             if (mirrorDeviceId != null && mirrorDeviceId != requestDeviceId) {
@@ -181,7 +233,7 @@ setInterval(async () => {
 
 let ws;
 let hostname = window.location.hostname;
-const websocketURL = `wss://${hostname}${hostname === 'localhost' ? ':8080' : ''}`;
+const websocketURL = `ws://${hostname}${hostname === 'localhost' ? ':8080' : ''}`;
 let isConnected = false
 
 function initWs() {

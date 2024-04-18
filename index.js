@@ -1,7 +1,7 @@
 const { run, getClients, storeClient, updateClient, getDevices, storeDevice, setDeviceImages, setDeviceData, getDevice } = require('./db')
 
 var admin = require("firebase-admin");
-var serviceAccount = require("./firebase-admin-link.json");
+var serviceAccount = require("./firebase-admin.json");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -37,7 +37,7 @@ const authenticateUser = (req, res, next) => {
     .verifyIdToken(idToken)
     .then((decodedToken) => {
       req.user = decodedToken;
-      const acceptedDomain = '@linklocal.tv'
+      const acceptedDomain = '@cityconnect.tv'
       if (decodedToken.email.endsWith(acceptedDomain)) {
         return next();
       }
@@ -56,6 +56,7 @@ const authenticateUser = (req, res, next) => {
 app.get('/device/:id', async (req, res) => {
   const id = req.params.id;
   const data = await getDevice(id)
+  console.log("Getting device", data)
   res.json(data)
 });
 
