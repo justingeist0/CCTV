@@ -122,10 +122,9 @@ function changeImage(index) {
                 element.style.zIndex = 0;
             }
         });
-        const isVideo = futureElement.src.includes('.mp4')
-        if (isVideo) {
+        try {
             futureElement.currentTime = 0
-        }
+        } catch (e) {}
         const animationDuration = 1000; 
         const startTime = performance.now();
         function animate() {
