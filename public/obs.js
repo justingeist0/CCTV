@@ -10,6 +10,31 @@ const firebaseConfig = {
     appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
 };
 
+let wakeLock = null;
+
+// Function to request a screen wake lock
+const requestWakeLock = async () => {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+            console.log('Screen Wake Lock was released');
+        });
+        console.log('Screen Wake Lock is active');
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+};
+
+// Call the function to request a screen wake lock
+requestWakeLock();
+
+// Listen for visibility changes and re-acquire the wake lock when the page is visible again
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        wakeLock = await navigator.wakeLock.request('screen');
+    }
+});
+
 function toggleFullScreen() {
     const elem = document.documentElement;
 
