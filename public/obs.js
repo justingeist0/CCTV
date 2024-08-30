@@ -64,7 +64,7 @@ document.addEventListener('fullscreenchange', (event) => {
     }
 });
 
-document.getElementById('media-container').addEventListener('click', toggleFullScreen);
+document.getElementById('fullscreenToggle').addEventListener('click', toggleFullScreen);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
