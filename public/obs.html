@@ -3,10 +3,17 @@
     <head>
         <title>Image Swapper</title>
         <style>
+
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
             .container {
                 position: relative;
-                width: 1920px;
-                height: 1080px;
+                width: 100vw;
+                height: 100vh;
             }
 
             img, video {
@@ -26,7 +33,6 @@ video::-webkit-media-controls {
         </style>
     </head>
     <body>
-
         <div class="container" id="media-container">
         </div>
 

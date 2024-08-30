@@ -10,6 +10,62 @@ const firebaseConfig = {
     appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
 };
 
+function toggleFullScreen() {
+    const elem = document.documentElement;
+
+    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        // If not in fullscreen mode, enter fullscreen mode
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.mozRequestFullScreen) { /* Firefox */
+            elem.mozRequestFullScreen();
+        } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE/Edge */
+            elem.msRequestFullscreen();
+        }
+    } else {
+        // If in fullscreen mode, exit fullscreen mode
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) { /* Firefox */
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE/Edge */
+            document.msExitFullscreen();
+        }
+    }
+}
+
+document.addEventListener('fullscreenchange', (event) => {
+    const container = document.getElementById('media-container');
+
+    if (document.fullscreenElement) {
+        console.log(`Entered fullscreen mode`);
+
+        // Apply styles to make the container fill the screen and appear on top of everything else
+        container.style.position = 'fixed';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.zIndex = '9999';
+    } else {
+        console.log(`Exited fullscreen mode`);
+
+        // Remove the styles when exiting fullscreen mode
+        container.style.position = '';
+        container.style.width = '';
+        container.style.height = '';
+        container.style.top = '';
+        container.style.left = '';
+        container.style.zIndex = '';
+    }
+});
+
+document.getElementById('media-container').addEventListener('click', toggleFullScreen);
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
@@ -62,6 +118,8 @@ let imageChangeTimeout;
 
 const mediaContainer = document.getElementById('media-container');
 
+
+
 function updateImageUrls(newUrls) {
     if (newUrls.length == 0) return console.log("No images found")
     if (newUrls.length == media.length) {
@@ -88,6 +146,8 @@ function updateImageUrls(newUrls) {
             video.controls = false;
             video.width = "1920";
             video.height = "1080";
+            video.style.width = "100vw";
+            video.style.height = "100vh";
             downloadVideo(url, video)
             mediaContainer.appendChild(video);
         } else {
@@ -95,8 +155,8 @@ function updateImageUrls(newUrls) {
             image.src = url;
             image.id = `nextImage${index}`;
             image.alt = "Image";
-            image.style.width = "1920px";
-            image.style.height = "1080px";
+            image.style.width = "100vw";
+            image.style.height = "100vh";
             mediaContainer.appendChild(image);
         }
     })
