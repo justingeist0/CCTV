@@ -10,31 +10,6 @@ const firebaseConfig = {
     appId: "1:1051852504406:web:cfa882fc070b7de844aaf7"
 };
 
-let wakeLock = null;
-
-// Function to request a screen wake lock
-const requestWakeLock = async () => {
-    try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        wakeLock.addEventListener('release', () => {
-            console.log('Screen Wake Lock was released');
-        });
-        console.log('Screen Wake Lock is active');
-    } catch (err) {
-        console.error(`${err.name}, ${err.message}`);
-    }
-};
-
-// Call the function to request a screen wake lock
-requestWakeLock();
-
-// Listen for visibility changes and re-acquire the wake lock when the page is visible again
-document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
-        wakeLock = await navigator.wakeLock.request('screen');
-    }
-});
-
 function toggleFullScreen() {
     const elem = document.documentElement;
 
@@ -75,7 +50,7 @@ document.addEventListener('fullscreenchange', (event) => {
         container.style.height = '100%';
         container.style.top = '0';
         container.style.left = '0';
-        container.style.zIndex = '9999';
+        container.style.zIndex = '99';
     } else {
         console.log(`Exited fullscreen mode`);
 
@@ -142,10 +117,12 @@ let requestDeviceId = urlDeviceId
 let imageChangeTimeout;
 
 const mediaContainer = document.getElementById('media-container');
+let youtubeVideo = []
 
-
-
-function updateImageUrls(newUrls) {
+function updateImageUrls(serverUrls) {
+    const newUrls = serverUrls.filter(url => !url.url.includes("https://www.youtube.com/watch?v="))
+    const youtubeUrls = serverUrls.filter(url => url.url.includes("https://www.youtube.com/watch?v="))
+    initYouTubeVideos(youtubeUrls)
     if (newUrls.length == 0) return console.log("No images found")
     if (newUrls.length == media.length) {
         let allEqual = true
@@ -193,6 +170,35 @@ function updateImageUrls(newUrls) {
 
     if (isInSynceWithOtherDevices)
         initWs()
+}
+
+let youtubeJob
+let currentYoutubeIdx = 0
+
+function initYouTubeVideos(youtubeUrls) {
+    youtubeUrls.forEach((url, index) => {
+        const videoId = url.url.split("v=")[1]
+        url.url = `https://www.youtube.com/embed/${videoId}?autoplay=1&cc_load_policy=1&mute=1`;
+    })
+    youtubeVideo = youtubeUrls
+    console.log(youtubeVideo)
+    if (youtubeVideo.length == 0) {
+        return
+    }
+    if (youtubeJob) {
+        clearTimeout(youtubeJob)
+    }
+    currentYoutubeIdx = 0
+    startPlayingVideos(true)
+}
+
+function startPlayingVideos(playInstantly = false) {
+    const current = youtubeVideo[currentYoutubeIdx]
+    youtubeJob = setTimeout(() => {
+        document.getElementById('entertainment').src = current.url
+        currentYoutubeIdx = (currentYoutubeIdx + 1) % youtubeVideo.length
+        startPlayingVideos()
+    }, playInstantly ? 0 : current.duration * 1000)
 }
 
 
