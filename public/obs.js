@@ -271,23 +271,25 @@ async function fetchLatestImages() {
         });
 }
 
-function setTimerForNextImage(serverIdx = imgIdx) {
+function setTimerForNextImage(serverIdx = imgIdx, fullscreenPause = true) {
     imgIdx = serverIdx
 
     if (imgIdx >= media.length) {
         imgIdx = 0;
+    }
+    if (youtubeVideo.length > 0 && fullscreenPause) {
         entertainment.style.width = "100%";
         entertainment.style.height = "100%";
         console.log("Setting full screen")
         setTimeout(() => {
             const entertainment = document.getElementById('entertainment')
-            entertainment.style.width = "1628px";
-            entertainment.style.height = "912px";
+            entertainment.style.width = "84.792%";
+            entertainment.style.height = "84.444%";
             console.log("Reset")
-            setTimerForNextImage()
-        }, 5000)
+            setTimerForNextImage(imgIdx, false)
+        }, 15000)
         return
-    } 
+    }
     clearTimeout(imageChangeTimeout)
     changeImage(imgIdx);
 
