@@ -276,8 +276,18 @@ function setTimerForNextImage(serverIdx = imgIdx) {
 
     if (imgIdx >= media.length) {
         imgIdx = 0;
-    }
-
+        entertainment.style.width = "100%";
+        entertainment.style.height = "100%";
+        console.log("Setting full screen")
+        setTimeout(() => {
+            const entertainment = document.getElementById('entertainment')
+            entertainment.style.width = "1628px";
+            entertainment.style.height = "912px";
+            console.log("Reset")
+            setTimerForNextImage()
+        }, 5000)
+        return
+    } 
     clearTimeout(imageChangeTimeout)
     changeImage(imgIdx);
 
